@@ -10,12 +10,15 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseMotionAdapter;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.awt.event.*;
+import java.util.Stack;
 
 class Paint {
 
     static Color[] palette = { Color.RED, Color.GREEN, Color.BLUE, Color.WHITE, Color.BLACK, Color.PINK};
     static int boxSize = 20;
     static int brushSize = 30;
+    static Stack<BufferedImage> history = new Stack<>();
 
     public static void main(String[] args) {
 
@@ -25,11 +28,7 @@ class Paint {
         g2.setColor(Color.WHITE);
         g2.fillRect(0,0,900,600);
 
-        for (int i = 0; i < palette.length; i++) {
-            g2.setColor(palette[i]);
-            g2.fillRect(i * boxSize, 0, boxSize, boxSize);
-        }
-
+        drawPallete(g2);
         g2.setColor(Color.BLACK);
 
         JFrame frame = new JFrame("Better Paint");
@@ -55,6 +54,8 @@ class Paint {
             panel.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mousePressed(MouseEvent e) {
+
+                    history.push(copyImage(image));
                     int x = e.getX();
                     int y = e.getY();
 
@@ -87,12 +88,45 @@ class Paint {
                     System.out.println("Brush Size: "+ brushSize);
                 }
             });
+            frame.addKeyListener(new KeyAdapter() {
 
+                @Override
+                public void keyPressed(KeyEvent e) {
+                    if (e.isControlDown() && e.getKeyCode() == KeyEvent.VK_Z) {
+                        if (!history.isEmpty()) {
+                            System.out.println("Undo");
+
+                            BufferedImage lastState = history.pop();
+                            g2.drawImage(lastState, 0, 0, null);
+                            drawPallete(g2);
+                            panel.repaint();
+                        } else {
+                            System.out.println("Nothing to Undo.");
+                        }
+                    }
+                }
+
+            });
         panel.setPreferredSize(new Dimension(image.getWidth(), image.getHeight()));
         frame.add(panel);
         frame.pack();
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
 
+    }
+    public static BufferedImage copyImage(BufferedImage source) {
+        BufferedImage b = new BufferedImage(source.getWidth(), source.getHeight(), source.getType());
+        Graphics g = b.getGraphics();
+        g.drawImage(source, 0,0, null);
+        g.dispose();
+        return b;
+    }
+    public static void drawPallete(Graphics2D g2) {
+        Color oldColor = g2.getColor();
+        for (int i = 0; i < palette.length; i++) {
+            g2.setColor(palette[i]);
+            g2.fillRect(i * boxSize, 0, boxSize, boxSize);
+        }
+        g2.setColor(oldColor);
     }
 }
